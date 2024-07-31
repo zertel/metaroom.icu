@@ -1,0 +1,8 @@
+# First, make the file executable:
+
+sudo chmod +x install.ubuntu.sh
+
+
+# And run:
+
+./install.ubuntu.sh
