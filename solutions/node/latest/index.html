@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>metaroom.icu 0.1.0</title>
+  <style type="text/css">
+    body{ cursor:none; }
+  </style>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js" integrity="sha384-/KNQL8Nu5gCHLqwqfQjA689Hhoqgi2S84SNUxC3roTe4EhJ9AfLkp8QiQcU8AMzI" crossorigin="anonymous"></script>
+
+
+  <script>
+    // TANIMLAMALAR
+      var myCanvas = null;
+      var myAudioPlayer = new Audio();
+      var ctx = null;
+      var dumpImg = null;
+      window.devices = [];
+    //
+
+    // SOCKET
+      const socket = io('https://metaroom.icu:8443',  { transports : ['websocket'] });
+      socket.on('get-navigator-infos', () => {
+        if(!myCanvas){
+          createHtmlElements();
+        }
+        socket.emit('get-navigator-infos',{
+            width: window.innerWidth,
+            height: window.innerHeight,
+            devices: window.devices,
+            volume: 0
+        });
+      });
+
+      // Suncudan gelen görseli canvas'a yansıt
+      socket.on('refresh-screen', (imageBase64) => {
+        //console.log("refresh-screen geldi");
+        //console.log(imageBase64);
+        if(!ctx){
+          console.log("CTX yok");
+          ctx = myCanvas.getContext('2d');
+          ctx.imageSmoothingEnabled = false;
+          ctx.webkitImageSmoothingEnabled = false;
+          ctx.mozImageSmoothingEnabled = false;
+        }
+        if(!dumpImg){
+          console.log("dumpImg yok");
+          dumpImg = new Image();
+        }
+        //dumpImg.src = `data:image/jpeg;base64,${imageBase64}`;
+        //console.log("imageBase64.length",imageBase64.length);
+        if(imageBase64){
+          console.log("refresh-screen dolu geldi");
+
+          dumpImg.src = imageBase64;
+          //console.log(imageBase64);
+          dumpImg.onload = () => {
+            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+            ctx.drawImage(dumpImg, 0, 0, window.innerWidth, window.innerHeight);
+            camButton.hazir = true;
+            //setTimeout(()=>{
+              socket.emit('refresh-screen',{
+                width: window.innerWidth,
+                height: window.innerHeight
+              });
+            //},10);
+          }
+
+        }
+        else{
+          //console.log("refresh-screen boş geldi, es geç");
+          //setTimeout(()=>{
+            socket.emit('refresh-screen',{
+              width: window.innerWidth,
+              height: window.innerHeight
+            });
+          //},34);
+        }
+      });
+
+      // Suncudan gelen sesi genel oynatıcıya yansıt
+      socket.on('play-sound', (data) => {
+        console.log("play-sound geldi", data.audioChunkBase64.length);
+        if(audButton.active){
+          //if(!myAudioPlayer.paused){
+            myAudioPlayer.volume = data.volume;
+            myAudioPlayer.src = data.audioChunkBase64;
+            myAudioPlayer.customCanPlay = true;
+          //}
+          //else{
+            //console.log("Audio player için yeni ses verisi geldi fakat henüz önceki oynatma bitmemiş.");
+          //}
+        }
+        else{
+          console.log("Ses verisi geldi fakat ses kapalı.");
+        }
+      });
+    // SOCKET END
+
+    // SCREEN SIZE
+      function openFullscreen() {
+        if (myCanvas.requestFullscreen) {
+          myCanvas.requestFullscreen();
+        } else if (myCanvas.webkitRequestFullscreen) { /* Safari */
+          myCanvas.webkitRequestFullscreen();
+        } else if (myCanvas.msRequestFullscreen) { /* IE11 */
+          myCanvas.msRequestFullscreen();
+        }
+      }
+
+      function updateScreenSize() {
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+        myCanvas.width = width;
+        myCanvas.height = height;
+      };
+
+      window.onresize = function(){
+        updateScreenSize();
+      }
+    // SCREEN SIZE END
+
+    // SOUND PLAYER
+      myAudioPlayer.oncanplaythrough = function(){
+        if(myAudioPlayer.customCanPlay){
+          console.log("myAudioPlayer.oncanplaythrough çalıştı.");
+          myAudioPlayer.customCanPlay = false;
+          myAudioPlayer.play();
+        }
+        else{
+          console.log("myAudioPlayer.oncanplaythrough çalıştı ama manuel play izni verilmemiş.");
+        }
+      }
+      myAudioPlayer.onended = function(){
+        console.log('Ses oynatması bitti.');
+        myAudioPlayer.pause();
+        myAudioPlayer.currentTime = 0;
+      }
+    //
+
+    // ONLOAD
+      window.onload = function(){
+        //updateScreenSize();
+        //openFullscreen();
+      }
+    // ONLOAD END
+
+
+
+    // EVENTS
+      // Mouse hareketlerini dinleyin
+      document.addEventListener('mousemove', (event) => {
+        if(myCanvas){
+
+          // Elementin konumunu alın
+          const rect = myCanvas.getBoundingClientRect();
+
+          // Mouse elementin üzerindeyse emit edin
+          if (event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom) {
+            // Mouse hareketlerini elementin konumundan baz alarak gönderin
+            socket.emit('mouse-move', {
+              x: Math.ceil(event.clientX - rect.left),
+              y: Math.ceil(event.clientY - rect.top),
+            });
+          }
+
+        }
+      });
+
+      // Mouse hareketlerini dinleyin
+      document.addEventListener('mousedown', (event) => {
+        socket.emit('mouse-click', {button: event.button, x: event.clientX, y: event.clientY});
+      });
+
+
+      // Klavye hareketlerini dinleyin
+      var keys = {};
+      document.addEventListener('keydown', (event) => {
+        if(!keys[event.key]){
+          keys[event.key] = 1;
+          socket.emit('key-down', {key: event.key});
+        }
+      });
+      document.addEventListener('keyup', (event) => {
+        keys[event.key] = 0;
+        socket.emit('key-up', {key: event.key});
+      });
+    // EVENTS END
+
+    // DEVICES
+      async function getDeviceList() {
+        try {
+          if(navigator.mediaDevices){
+            const mediaDevices = await navigator.mediaDevices.enumerateDevices();
+            for (var key in mediaDevices) {
+              window.devices.push(mediaDevices[key].kind);
+            }
+          }
+        } catch(error) {
+          
+        }
+        return devices;
+      }
+      getDeviceList();
+      async function stopCamera(stream) {
+        try {
+          const tracks = stream.getTracks();
+          tracks.forEach(track => track.stop());
+          console.log('Kamera durduruldu');
+        } catch(error) {
+          console.error(error);
+        }
+      }
+    //
+
+    // CREATE HTML ELEMENTS
+      var camButton = null;
+      var camVideo = null;
+      var camCanvas = null;
+      var camCanvasCtx = null;
+      var micButton = null;
+      var micAudio = null;
+      function createHtmlElements(){        
+          myCanvas = document.createElement('canvas');
+          myCanvas.width = window.innerWidth;
+          myCanvas.height = window.innerHeight;
+          myCanvas.id = 'myCanvas';
+          myCanvas.style.backgroundColor = "#08585E";
+          document.body.appendChild(myCanvas);
+
+          // Camera Button
+            camButton = document.createElement('button');
+            camButton.hazir = true;
+            camButton.style.width = "80px";
+            camButton.style.height = "80px";
+            camButton.style.backgroundColor = "#eee";
+            camButton.style.borderRadius = "80px";
+            camButton.style.position = "fixed";
+            camButton.style.right = "30px";
+            camButton.style.top = "30px";
+            camButton.style.zIndex = "102";
+            camButton.style.border = "1px solid #ccc";
+            camButton.innerText = "Kamera";
+            camButton.addEventListener('click',function(){
+              if(!this.active){
+                this.active = true;
+                this.style.backgroundColor = "#ffb8b8";
+
+                if(!camVideo){
+                  camVideo = document.createElement('video');
+                  //camVideo.style.width = "220px";
+                  //camVideo.style.top = "30px";
+                  //camVideo.style.right = "130px";
+                  //camVideo.style.position = "fixed";
+                  //camVideo.style.zIndex = "102";
+                  //camVideo.id = 'camVideo';
+                  //camVideo.setAttribute('controls',true);
+                  camVideo.style.display = "none";
+                  document.body.appendChild(camVideo);
+                }
+
+                if(!camCanvas){
+                  camCanvas = document.createElement('canvas');
+                  camCanvasCtx = camCanvas.getContext('2d');
+                  camCanvasCtx.imageSmoothingEnabled = false;
+                  camCanvasCtx.webkitImageSmoothingEnabled = false;
+                  camCanvasCtx.mozImageSmoothingEnabled = false;
+                  camCanvas.width = 640;
+                  camCanvas.height = 360;
+                }
+
+                navigator.mediaDevices.getUserMedia({video: true, audio: false})
+                  .then((stream) => {
+                    //camVideo.style.display = "block";
+                    console.log(stream);
+                    camVideo.srcObject = stream;
+                    camVideo.play();
+                    camButton.emitFrame();
+                  });
+              } 
+              else{
+                this.active = false;
+                this.style.backgroundColor = "#eee";
+                stopCamera(camVideo.srcObject);
+                //camVideo.style.display = "none";
+              }
+              
+              
+            });
+            camButton.emitFrame = function(){
+              if(camButton.active){
+                if(camButton.hazir){
+                  camButton.hazir = false;
+                  console.log("camButton.emitFrame");
+                  camCanvasCtx.drawImage(camVideo, 0, 0, camCanvas.width, camCanvas.height);
+                  const imageBase64 = camCanvas.toDataURL('image/png');
+                  socket.emit('cam-stream', imageBase64);
+                }
+                setTimeout(camButton.emitFrame,5);
+              }
+              else{
+                console.log('camButton pasif edilmiş.');
+              }
+            };
+            document.body.appendChild(camButton);
+          //
+
+          // Microphone Button
+            micButton = document.createElement('button');
+            micButton.style.width = "80px";
+            micButton.style.height = "80px";
+            micButton.style.backgroundColor = "#eee";
+            micButton.style.borderRadius = "80px";
+            micButton.style.position = "fixed";
+            micButton.style.right = "30px";
+            micButton.style.top = "130px";
+            micButton.style.zIndex = "102";
+            micButton.style.border = "1px solid #ccc";
+            micButton.innerText = "Mikrofon";
+            micButton.addEventListener('click',function(){
+              if(!this.active){
+                this.active = true;
+                this.style.backgroundColor = "#ffb8b8";
+
+                if(!micButton.mediaRecorder){
+                  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                    console.log("Mikrofon aktif");
+                    micButton.mediaRecorder = new MediaRecorder(stream);
+                    
+                    // 'dataavailable' olayı gerçekleştiğinde, veri kaydedilir
+                    micButton.mediaRecorder.addEventListener('dataavailable', event => {
+                      // 'Blob' nesnesini 'base64' olarak çevirin
+                      const reader = new FileReader();
+                      reader.addEventListener('loadend', () => {
+                        if(micButton.active){
+                          socket.emit('mic-stream', reader.result);
+                          setTimeout(micButton.emitChunk.bind(micButton),1);
+                        }
+                      });
+                      reader.readAsDataURL(event.data);
+                    });
+
+                    micButton.emitChunk();
+                  });
+                }
+                else{
+                    micButton.emitChunk();
+                    if(audButton.active){
+                      //myAudioPlayer.play();
+                      //myAudioPlayer.pause();
+                      socket.emit('set-volume',1);
+                    }
+                }
+              } 
+              else{
+                this.active = false;
+                this.style.backgroundColor = "#eee";
+              }
+            });
+            micButton.emitChunk = function(){
+              //console.log(audioMic);
+
+              this.mediaRecorder.start();
+              //console.log(this.mediaRecorder.state);
+              setTimeout(()=>{
+                this.mediaRecorder.stop();
+                //console.log(this.mediaRecorder.state);
+              },200);
+
+              //console.log(audioMic.captureStream());
+              //const audioDataMic = audioMic.captureStream().getAudioTracks()[0].clone();
+              //console.log(audioDataMic);
+              //socket.emit('mic-stream', audioDataMic);
+            }
+            document.body.appendChild(micButton);
+          //
+
+          // Output Audio Button
+            audButton = document.createElement('button');
+            audButton.style.width = "80px";
+            audButton.style.height = "80px";
+            audButton.style.backgroundColor = "#eee";
+            audButton.style.borderRadius = "80px";
+            audButton.style.position = "fixed";
+            audButton.style.right = "30px";
+            audButton.style.top = "230px";
+            audButton.style.zIndex = "102";
+            audButton.style.border = "1px solid #ccc";
+            audButton.innerText = "Ses";
+            audButton.addEventListener('click',function(){
+              if(!this.active){
+                this.active = true;
+                this.style.backgroundColor = "#ffb8b8";
+
+                //myAudioPlayer.play();
+                //myAudioPlayer.pause();
+                socket.emit('set-volume',1);
+              } 
+              else{
+                this.active = false;
+                this.style.backgroundColor = "#eee";
+
+                //myAudioPlayer.pause();
+                myAudioPlayer.volume = 0; 
+                socket.emit('set-volume',0);              
+              }
+            });
+            document.body.appendChild(audButton);
+          //
+      }
+    //
+  </script>
+</head>
+<body style="margin:0;padding:0;background-color:black;overflow:hidden;" ondblclick="openFullscreen()"></body>
+</html>
