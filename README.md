@@ -33,11 +33,11 @@ Metaroom security updates should be worked on, just like operating systems, with
 A simple example of using Metaroom;
 - A family of 4 people lives in a house.
 - There is a computer, a smart TV, 3 cell phones, 3 tripods for cell phones.
-- They joined a metaroom by typing https://<any-metaroom>.icu in the web browsers of the phones and entered a secret and private room in the metaroom.
+- They joined a metaroom by typing **https://"any-metaroom".icu** in the web browsers of the phones and entered a secret and private room in the metaroom.
 - They placed the phones on the tripods with the phone cameras facing the center of the living room.
-- They allowed https://<any-metaroom>.icu to use the cameras of the phones.
+- They allowed **https://"any-metaroom".icu** to use the cameras of the phones.
 - Then they turned on the computer and joined the same metaroom.
-- On the computer they opened the “3d dress scanner tool” developed by the metaroom project https://<any-metaroom>.icu.
+- On the computer they opened the “3d dress scanner tool” developed by the metaroom project **https://"any-metaroom".icu**.
 - The sweet daughter of the family, wearing a one-piece dress, accidentally created a 3d model of her dress while passing through the point where the cameras were looking. (what are we going to do with this model, is it useful for the store that sells the dress? We better share this 3d model with the store owner. no, I don't know if the store owner has an account in this project, so let's enter his e-mail address.)
 - But I think we forgot one thing, the energetic son of the family set up the 3 camera setup to swing a sword in the knight game on the smart TV screen in the same metaroom. But why doesn't he use the same metaroomed Virtual Reality Goggles (maybe he feels nauseous)?
 - So, how about adding some fun to the game? Maybe it would be better to let the sound from one of the phones' microphones stream into the game in the metaroom (maybe when swinging a sword, if you shout loudly, the enemy monsters might get scared and run away).
