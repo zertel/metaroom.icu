@@ -12,9 +12,9 @@ global.apps = [];
 // EXPRESS UYGULAMASI TANIMLA
 const app = express();
 
-//app.get('/', (req, res) => {
-//  res.sendFile(__dirname + '/index.html');
-//});
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/index.html');
+});
 
 
 // HTTPS SUNUCU BAŞLAT
