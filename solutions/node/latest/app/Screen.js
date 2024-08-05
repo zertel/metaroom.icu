@@ -5,7 +5,6 @@ const ScreenObject = require('./ScreenObject');
 const ImageDriver = require('./ImageDriverJimp');
 //const ImageDriver = require('./ImageDriverSharp');
 const BasicAnimation = require('./BasicAnimation');
-const BasicApp = require('./BasicApp');
 
 class Screen{
   constructor(socket, width, height) {
@@ -15,6 +14,7 @@ class Screen{
     this.height = height;
     this.objects = {};
     this.orderedObjects = [];
+    this.pixels = {};
     this.animations = {};
     this.orderedAnimations = [];
     this.currentFrameBase64 = "";
@@ -24,22 +24,33 @@ class Screen{
     this.screenThemeColor = [0,0,0,0];
     this.waitForDraw = 0;
     this.refreshing = false;
+    this.maxFps = 20;
     this.setCounter = 0;
-    this.webpOutput = false;
-    this.outputQuality = 90;
+    this.outputOptions = {
+      format: "webp",
+      quality: 1,
+      //lossless: true,
+      effort: 6 //0-6 zip step
+    };
 
     this.apps = {};
 
     this.socket = socket;
     console.log(this.socket.id + " idli socket için " + this.width + "x" + this.height + " ölçülerinde yeni ekran oluşruldu.");
+
+    //this.loadApp('welcome')
   }
   
   startStream() {
-    console.log(this.socket.id + " idli socket için startStream çalıştı.");
+    //console.log(this.socket.id + " idli socket için startStream çalıştı.");
 
     this.stream = true;
     this.drawFrame();
     this.emitFrame();
+
+    setTimeout((function(){
+      this.startStream();
+    }).bind(this),1000/this.maxFps);
   }
 
   setObject(id, newData) {
@@ -115,7 +126,7 @@ class Screen{
     //console.log("--> drawFrame(" + this.setCounter + "):" + this.socket.id + " idli socket için çalıştı.");
 
     if(!this.active){
-      console.log('<-- drawFrame durdu, screen pasif.');
+      //console.log('<-- drawFrame durdu, screen pasif.');
       return false;
     }
 
@@ -142,6 +153,7 @@ class Screen{
                 break;
 
               case 'tris':
+                newFrame.drawTris(so.data.x1, so.data.y1, so.data.x2, so.data.y2, so.data.x3, so.data.y3, so.data.color);
                 break;
 
 
@@ -161,28 +173,32 @@ class Screen{
             }
           }
         }
-      
-        
-        if(this.objects.mouseCursor){
-          var so = this.objects.mouseCursor;  
-          await newFrame.mouseCursor(so.x, so.y);
+
+      }
+      //else{
+      //  console.log("orderedObjects boş.")
+      //}
+
+
+      for(var x in this.pixels){
+        for(var y in this.pixels[x]){
+          newFrame.px(x,y,this.pixels[x][y],this.width,this.height);
         }
-        
-
-
-        await newFrame['getBase64' + (this.webpOutput ? 'Webp' : '')]((buffer) => {
-          //console.log("Screen: newFrame.getBase64((buffer)", buffer);
-          this.currentFrameBase64 = buffer;
-          this.currentFrameNo = this.setCounter; //newFrame.hash();
-          //this.currentFrameNo = Math.random();
-          if(cb)cb();
-        }, this.outputQuality);
-
       }
-      else{
-        console.log("orderedObjects boş.")
+      this.pixels = {};
+
+      if(this.objects.mouseCursor){
+        var so = this.objects.mouseCursor;  
+        await newFrame.mouseCursor(so.x, so.y);
       }
 
+      await newFrame.getBase64(this.outputOptions, (buffer) => {
+        //console.log("Screen: newFrame.getBase64((buffer)", buffer);
+        this.currentFrameBase64 = buffer;
+        this.currentFrameNo = this.setCounter; //newFrame.hash();
+        //this.currentFrameNo = Math.random();
+        if(cb)cb();
+      });
 
     }
     else{
@@ -193,30 +209,6 @@ class Screen{
     } 
 
 
-
-
-
-    /*/
-    const pixels = image.bitmap.data;
-    for (let i = 0; i < pixels.length; i++) {
-      pixels[i] = i % 255;
-    }
-    /*/
-
-    /*/ PERFORMANS TESTİ
-    for (var i = 0; i < pixels.length; i+=4) {
-      pixels[i] = Math.floor(Math.random() * 256);
-      pixels[i+1] = Math.floor(Math.random() * 256);
-      pixels[i+2] = Math.floor(Math.random() * 256);
-      pixels[i+3] = 255;
-    }
-    /*/
-
-    // image.quality(1).write('image.png');
-
-      
-
-    //});
     //console.log("<-- drawFrame bitti.");
 
   }
@@ -225,13 +217,33 @@ class Screen{
     //console.log('--> ' + this.socket.id + ' idli socket için emitFrame çalıştı.');
 
     if(!this.active){
-      console.log('<-- emitFrame durdu, screen pasif.');
+      //console.log('<-- emitFrame durdu, screen pasif.');
       return false;
     }
 
     if(!this.stream){
-      console.log('<-- emitFrame stream durduruldu.');
+      //console.log('<-- emitFrame stream durduruldu.');
       return false;
+    }
+
+
+    if(this.currentFrameBase64.length > 0){      
+      if(this.outputOptions.quality > 1 && this.currentFrameBase64.length > 22 * 1024){
+        this.outputOptions.quality -= 10;
+        if(this.outputOptions.quality < 1){
+          this.outputOptions.quality = 1;
+        }
+        console.log(this.currentFrameBase64.length,'--> boyut çok büyük, kaliteyi düşür. ',this.outputOptions.quality);
+        return false;
+      }
+      else if(this.outputOptions.quality < 80 && this.currentFrameBase64.length < 4 * 1024){
+        this.outputOptions.quality += 10;
+        if(this.outputOptions.quality > 80){
+          this.outputOptions.quality = 80;
+        }
+        console.log(this.currentFrameBase64.length,'--> boyut çok küçük, kaliteyi yükselt. ',this.outputOptions.quality);
+        return false;
+      }
     }
 
     /*/
@@ -304,73 +316,16 @@ class Screen{
     }
   }
 
-  loadApp(appId){
-    if(!global.apps[appId]){
-      global.apps[appId] = require('./../apps/'+appId+'/'+appId+'.js');
-      console.log(appId + " idli uygulamanın çekirdeği yüklendi.", global.apps[appId]);
-    }
-    else{
-      console.log("Uygulama çekirdeği zaten yüklenmiş.");
-    }
-
-    if(!this.apps[appId]){
-      this.apps[appId] = new global.apps[appId](this);
-    }
-    else{
-      console.log("Uygulama daha önce bu ekrana yüklenmiş.");
-      this.apps[appId].clear();
-    }
-
-    if(this.apps[appId].enabled == true){
-      this.apps[appId].start();
-      this.apps[appId].render();
-      //this.apps[appId].update();
-      this.apps[appId].intervalId = setInterval(function(){
-        this.update();
-        this.render();
-      }.bind(this.apps[appId]),(1000/30) * (100/this.apps[appId].speed));
-    }
+  loadApp(appName){
+    const appLoader = new AppLoader;
+    appLoader.loadWithDb(this, appName);
   }
 
-  loadAppWithAssetId(assetId){
-    var dataText = fs.readFileSync('/var/www/ezis/asset/1000/8.dat').toString();
-    var data = JSON.parse(dataText);
-    var appId = assetId;
-
-    //if(!global.apps[appId]){
-      this.apps[appId] = new BasicApp(appId, this);
-      if(data.width){
-        this.apps[appId].width = data.width;
-      }
-      if(data.height){
-        this.apps[appId].height = data.height;
-      }
-      this.apps[appId].bgColor = data.bgColor;
-      this.apps[appId].speed = data.speed;
-      console.log(appId + " idli uygulamanın çekirdeği yüklendi.");
-    //}
-    //else{
-    //  console.log("Uygulama çekirdeği zaten yüklenmiş.");
-    //}
-
-    if(this.apps[appId].enabled == true){
-      //this.apps[appId].start();
-      this.apps[appId].render();
-      //this.apps[appId].update();
-      this.apps[appId].intervalId = setInterval(function(){
-        //this.apps[appId].update();
-        this.apps[appId].render();
-      }.bind(this.apps[appId]),(1000/30) * (100/this.apps[appId].speed));
+  px(x,y,rgba){
+    if(!this.pixels[x]){
+      this.pixels[x] = {};
     }
-
-    this.apps[appId].onKeyUp = (key) => {
-      console.log(this.name + " KEY UP " + key);
-      if(key == "Escape"){
-        //this.loadApp('desktop');
-        //this.apps[appId].exit();
-      }
-    }
-
+    this.pixels[x][y] = rgba;
   }
 
   hexToRgba(hex) {

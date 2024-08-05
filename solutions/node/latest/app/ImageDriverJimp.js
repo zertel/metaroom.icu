@@ -33,27 +33,42 @@ class ImageDriverJimp {
     await this.jimpImage.composite(altImage, x, y);
   }
 
-  async getBase64Webp(cb, quality){
-    await this.jimpImage.getBuffer('image/png',async (err, buffer)=>{
-      const webpOptions = quality < 100 ? {quality:quality} : {lossless:true}
-      await sharp(buffer).webp(webpOptions).toBuffer().then((bigImageBuffer) => {
-        const base64Image = 'data:image/webp;base64,' + bigImageBuffer.toString('base64');
-        cb(base64Image);
-      });
-    });
+  async getBase64(outputOptions, cb){
+
+      if (outputOptions.format == "webp"){
+
+        // jimp bünyesinde webp olmadığı için, ilk önce buffer'i png olarak al
+        await this.jimpImage.getBuffer('image/png', async (err, buffer)=>{
+            // buffer gelince webp çıktısı için sharp'ı araya sok
+            await sharp(buffer).webp(outputOptions).toBuffer().then((bigImageBuffer) => {
+              const base64Image = 'data:image/webp;base64,' + bigImageBuffer.toString('base64');
+              cb(base64Image);
+              //console.log("jimp, webp çıktı verdi");
+            });
+        });
+
+      }
+      else{
+
+        // istenen formatın jimp bünyesinde olduğunu varsayarak devam et
+        await this.jimpImage.getBuffer('image/' + outputOptions.format, async (err, buffer)=>{
+          const base64Image = 'data:image/' + outputOptions.format + ';base64,' + buffer.toString('base64');
+          cb(base64Image);
+          console.log("jimp, " + outputOptions.format + " çıktı verdi");
+        });
+
+      }
+
   }
 
-  async getBase64(cb){
-    //console.log("ImageDriverJimp: async getBase64");
-
-    //await this.getBase64Sharp(cb);
-
-    cb(await this.jimpImage.getBase64Async('image/png'));
-  }
-
-  async box(x, y, w, h, rgba){
-    var box = await Jimp.create(w, h, this.color(rgba));
-    await this.jimpImage.composite(box, x, y);
+  async px(x, y, rgba, screenW, screenH){
+    //rgba = this.color(rgba);
+    const idx = ((x-1) * screenW * 4) + ((y-1)*4);
+    this.jimpImage.bitmap.data[idx] = rgba[0]; // R
+    this.jimpImage.bitmap.data[idx + 1] = rgba[1]; // G
+    this.jimpImage.bitmap.data[idx + 2] = rgba[2]; // B
+    this.jimpImage.bitmap.data[idx + 3] = rgba[3]; // A
+    
   }
 
 

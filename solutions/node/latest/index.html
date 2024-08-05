@@ -20,7 +20,15 @@
     //
 
     // SOCKET
-      const socket = io('https://metaroom.icu:8443',  { transports : ['websocket'] });
+      const socket = io(
+        // FOR HTTP
+        //'http://localhost:3000',
+
+        // FOR HTTPS
+        'https://metaroom.icu:8443',
+
+        { transports : ['websocket'] }
+      );
       socket.on('get-navigator-infos', () => {
         if(!myCanvas){
           createHtmlElements();
@@ -59,15 +67,18 @@
             ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
             ctx.drawImage(dumpImg, 0, 0, window.innerWidth, window.innerHeight);
             camButton.hazir = true;
+            /*/
             //setTimeout(()=>{
               socket.emit('refresh-screen',{
                 width: window.innerWidth,
                 height: window.innerHeight
               });
             //},10);
+            /*/
           }
 
         }
+        /*/
         else{
           //console.log("refresh-screen boş geldi, es geç");
           //setTimeout(()=>{
@@ -77,6 +88,7 @@
             });
           //},34);
         }
+        /*/
       });
 
       // Suncudan gelen sesi genel oynatıcıya yansıt

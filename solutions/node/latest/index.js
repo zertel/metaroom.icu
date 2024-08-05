@@ -1,5 +1,6 @@
 const express = require('express');
 const fs = require('fs');
+//const http = require('http');
 const https = require('https');
 const socketIO = require('socket.io');
 
@@ -9,48 +10,33 @@ const Audio = require('./app/Audio');
 const connections = [];
 global.apps = [];
 
+
 // EXPRESS UYGULAMASI TANIMLA
 const app = express();
-
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
 });
 
 
+// HTTP SUNUCU BAŞLAT
+// const server = http.createServer({}, app);
+
+// YA DA
 // HTTPS SUNUCU BAŞLAT
 const server = https.createServer({
   key: fs.readFileSync('/etc/letsencrypt/live/metaroom.icu/privkey.pem'),
   cert: fs.readFileSync('/etc/letsencrypt/live/metaroom.icu/fullchain.pem'),
-  maxHttpBufferSize: 1e8 // 100 MB
 }, app);
+
 
 
 // SOCKET IO TANIMLA
 const io = socketIO(server);
 io.on('connection', (socket) => {
   console.log('===== Bir kullanıcı bağlandı. ====================================================================');
-
   connections.push(socket);
   socket.join('usr1-screen');
 
-  /*/
-  var mysql = require('mysql');
-
-  var con = mysql.createConnection({
-    host: "localhost",
-    user: "miadb",
-    password: "Y5szt3qwT9jBvpXx",
-    database: "miadb"
-  });
-
-  con.connect(function(err) {
-  if (err) throw err;
-    con.query("SHOW TABLES", function (err, result, fields) {
-      if (err) throw err;
-      console.log(result);
-    });
-  });
-  /*/
 
   socket.emit('get-navigator-infos');
   socket.on('get-navigator-infos', (data) => {
@@ -62,18 +48,29 @@ io.on('connection', (socket) => {
     socket.screen.orginalW = data.width;
     socket.screen.orginalH = data.height;
 
-    socket.audio = new Audio(socket, data.volume);
 
+    // RUN SCREEN ONLOAD
+    socket.audio = new Audio(socket, data.volume);
+    
     socket.screen.startStream();
 
     socket.screen.setObject('cam',{type:'cam', x:0, y:0, w:0, h:0, data:''});
     
     //socket.screen.loadApp("desktop");
 
-    socket.screen.setObject('mouseCursor',{type:'mouseCursor', x:0, y:0, w:0, h:0, data:null});
+    //socket.screen.setObject('mouseCursor',{type:'mouseCursor', x:0, y:0, w:0, h:0, data:null});
 
+    // TEST CODE
+    setInterval(function(){
+      for (var x = 1; x < 144; x++) {
+        for (var y = 1; y < 256; y++) {
+          socket.screen.px(x,y,[Math.floor(Math.random()*256), Math.floor(Math.random()*256), Math.floor(Math.random()*256),255]);
+        }
+      }
+    },1000/20);
 
   });
+
 
   socket.on('disconnect', () => {
     if(socket.screen){
@@ -177,6 +174,11 @@ io.on('connection', (socket) => {
 
 });
 
+/*
+server.listen(3000, () => {
+  console.log('HTTP sunucusu ve Socket.IO 3000 portunu dinliyor.');
+});
+*/
 server.listen(8443, () => {
   console.log('HTTPS sunucusu ve Socket.IO 8443 portunu dinliyor.');
 });
