@@ -5,21 +5,18 @@ const ScreenObject = require('./ScreenObject');
 const ImageDriver = require('./ImageDriverJimp');
 //const ImageDriver = require('./ImageDriverSharp');
 const BasicAnimation = require('./BasicAnimation');
-const PerlinNoise = require('./PerlinNoise');
 
 class Screen{
   constructor(socket, width, height) {
     this.active = true;
-    this.testScreen = true;
 
     this.width = width;
     this.height = height;
     this.objects = {};
     this.orderedObjects = [];
-    this.pixels = null;
+    this.pixels = {};
     this.animations = {};
     this.orderedAnimations = [];
-    this.temp = {};
     this.currentFrameBase64 = "";
     this.currentFrameNo = 0;
     this.cameraStreamBase64 = "";
@@ -27,7 +24,7 @@ class Screen{
     this.screenThemeColor = [0,0,0,0];
     this.waitForDraw = 0;
     this.refreshing = false;
-    this.maxFps = 60;
+    this.maxFps = 20;
     this.setCounter = 0;
     this.outputOptions = {
       format: "webp",
@@ -42,7 +39,6 @@ class Screen{
     console.log(this.socket.id + " idli socket için " + this.width + "x" + this.height + " ölçülerinde yeni ekran oluşruldu.");
 
     //this.loadApp('welcome')
-    this.clearPixels();
   }
   
   startStream() {
@@ -134,8 +130,6 @@ class Screen{
       return false;
     }
 
-
-
     if(this.emitedFrameNo != this.setCounter /*newFrame.hash()*/){
       // Yeni resim oluşturun
       // this.width = 106;
@@ -146,12 +140,6 @@ class Screen{
         height: this.height,
         background: this.screenThemeColor //[0,0,0,0] //r,g,b,a
       });
-
-
-      if(this.testScreen){
-        this.drawTest();
-      }
-
 
       //Jimp.create(this.width, this.height, this.screenThemeColor).then(image => {
         // Resmi işleyin ve değiştirin
@@ -192,54 +180,17 @@ class Screen{
       //}
 
 
-      //for(var x in this.pixels){
-        //for(var y in this.pixels[x]){
-          //newFrame.px(x,y,this.pixels[x][y],this.width,this.height);
-        //}
-      //}
-
-      //console.log(this.pixels);
-      /*/
-      for (let i = 0; i < this.pixels.length; i+3) {
-        if(this.pixels[i]>0){
-          console.log("i:"+i, "rgb:",[this.pixels[i],this.pixels[i+1],this.pixels[i+2]]);
+      for(var x in this.pixels){
+        for(var y in this.pixels[x]){
+          newFrame.px(x,y,this.pixels[x][y],this.width,this.height);
         }
-        //console.log("x:"+(i % this.width) +" y:"+)
       }
-      /*/
-      
-      if(this.objects.mouseCursor){
-        let x = this.objects.mouseCursor.x;
-        let y = this.objects.mouseCursor.y;
+      this.pixels = {};
 
-        let rnd = Math.ceil(Math.random()*180);
-        this.drawTris( x,y, x+7,y+6, x+4,y+12, [255,255,255], [255,rnd,rnd] ) //x1, y1, x2, y2, x3, y3, clr
-
-        /*
-        for(let i=x; i<=x+10; i++){
-          for(let j=y; j<=y+10; j++){
-            if(this.isInsideTriangle( i,j,  x,y,  x+7,y+6,  x+4,y+12 )){
-              let rnd = Math.random()*80;
-              this.px(i,j,[255,rnd,rnd]);
-            }
-          }
-        }
-
-        this.drawLine(x, y, x+7, y+6, [0,255,255]);
-        this.drawLine(x+7, y+6, x+4, y+12, [0,255,255]);
-        this.drawLine(x+4, y+12, x, y, [0,255,255]);
-        */
-      }
-
-      newFrame.fillRgbPixels(this.pixels);
-      this.clearPixels();
-
-      /*      
       if(this.objects.mouseCursor){
         var so = this.objects.mouseCursor;  
         await newFrame.mouseCursor(so.x, so.y);
       }
-      */
 
       await newFrame.getBase64(this.outputOptions, (buffer) => {
         //console.log("Screen: newFrame.getBase64((buffer)", buffer);
@@ -260,199 +211,6 @@ class Screen{
 
     //console.log("<-- drawFrame bitti.");
 
-  }
-
-  drawTest(){
-    if(!this.temp.testCounter){
-      this.temp.testCounter = 0;
-    }
-    this.temp.testCounter++;
-
-    if(!this.temp.testSwitcher){
-      this.temp.testSwitcher = 1;
-    }
-    if(this.temp.testCounter % 180 == 0){
-      this.temp.testSwitcher++;
-    }
-
-
-    let names = ["", "bresenham_lines", "running_1", "color_palette", "running_2", "perlin_noise"];
-    if(this.temp.testSwitcher>=names.length){
-      this.temp.testSwitcher = 1;
-    }
-
-    this.bgEffect(names[this.temp.testSwitcher]);
-  }
-
-  bgEffect(name){
-    switch(name){
-
-      case "running_1":
-        this.setCounter+=5;
-        var r = this.setCounter % 255;
-        var g = r + 30;
-        var b = g + 30;
-        for (var y = 1; y <= this.height; y++) {
-          for (var x = 1; x <= this.width; x++) {
-            r+=Math.ceil(Math.random()*3);
-            if(r>255) r = 0;
-            g+=Math.ceil(Math.random()*3);
-            if(g>255) g = 0;
-            b+=Math.ceil(Math.random()*3);
-            if(b>255) b = 0;
-            this.px(x,y,[r, g, b]);
-          }
-        }
-        break;
-
-      case "running_2":
-        this.setCounter+=5;
-        var r = this.setCounter % 255;
-        var g = r + 30;
-        var b = g + 30;
-        for (var y = 1; y <= this.height; y++) {
-          for (var x = 1; x <= this.width; x++) {
-            r+=Math.ceil(Math.random()*5);
-            if(r>255) r = 0;
-            g+=Math.ceil(Math.random()*5);
-            if(g>255) g = 0;
-            b+=Math.ceil(Math.random()*5);
-            if(b>255) b = 0;
-            this.px(x,y,[r, g, b]);
-          }
-        }
-        break;
-
-      case "color_palette":
-        this.setCounter+=1;
-        var r = this.setCounter % 255;
-        var g = r + 30;
-        var b = g + 30;
-        for (var y = 1; y <= this.height; y++) {
-          for (var x = 1; x <= this.width; x++) {
-            r+=3;
-            if(r>255) r = 0;
-            g+=2;
-            if(g>255) g = 0;
-            b+=1;
-            if(b>255) b = 0;
-            this.px(x,y,[r, g, b]);
-          }
-        }
-        //console.log(this.pixels);
-        break;
-
-      case "bresenham_lines":
-        this.setCounter++;
-        this.drawLine(Math.ceil(Math.random()*this.width), Math.ceil(Math.random()*this.height), Math.ceil(Math.random()*this.width), Math.ceil(Math.random()*this.height), [0,255,0,255] );
-        break;
-
-      case "perlin_noise":
-        this.setCounter++;
-        const perlin = new PerlinNoise();
-        for (let y = 1; y <= this.height; y++) {
-            for (let x = 1; x <= this.width; x++) {
-                const value = perlin.noise(x / 50, y / 50);
-                const color = Math.floor((value + 1) * 128);  // -1 to 1 -> 0 to 255
-                this.px(x,y,[color,color,color]);
-            }
-        }
-        break;
-
-      case "px_test":
-        this.setCounter++;
-        this.px(1,1,[255,3,2]);
-        this.px(2,1,[255,3,2]);
-        this.px(1,2,[255,3,2]);
-        this.px(2,2,[255,3,2]);
-        break;
-
-    }
-  }
-
-  drawLine(x0, y0, x1, y1, clr) {
-    // Bresenham
-    let dx = Math.abs(x1 - x0);
-    let dy = Math.abs(y1 - y0);
-    let sx = (x0 < x1) ? 1 : -1;
-    let sy = (y0 < y1) ? 1 : -1;
-    let err = dx - dy;
-
-    while(true) {
-        this.px(x0, y0, clr);
-        if (x0 === x1 && y0 === y1) break;
-        let e2 = 2 * err;
-        if (e2 > -dy) { err -= dy; x0 += sx; }
-        if (e2 < dx) { err += dx; y0 += sy; }
-    }
-  }
-
-  floodFill(x, y, newColor, oldColor) {
-    if (x < 0 || x >= this.width || y < 0 || y >= this.height) return;
-
-    const index = ((y-1) * this.width + (x-1)) * 3;
-    if ([this.pixels[index], this.pixels[index+1], this.pixels[index+2]] !== oldColor) return;
-    
-    this.px(x, y, newColor);
-    
-    floodFill(x + 1, y, newColor, oldColor);
-    floodFill(x - 1, y, newColor, oldColor);
-    floodFill(x, y + 1, newColor, oldColor);
-    floodFill(x, y - 1, newColor, oldColor);
-  }
-
-  isInsideTriangle(x, y, x1, y1, x2, y2, x3, y3) {
-    var area = 0.5 * (-y2 * x3 + y1 * (-x2 + x3) + x1 * (y2 - y3) + x2 * y3);
-    var s = 1 / (2 * area) * (y1 * x3 - x1 * y3 + (y3 - y1) * x + (x1 - x3) * y);
-    var t = 1 / (2 * area) * (x1 * y2 - y1 * x2 + (y1 - y2) * x + (x2 - x1) * y);
-    return s > 0 && t > 0 && 1 - s - t > 0;
-  }
-
-   // Üçgen çizen fonksiyon
-  drawTris(x1, y1, x2, y2, x3, y3, clrLine, clrFill) {
-    
-    // İçini doldur
-    if(clrFill){
-      this.fillTris(x1, y1, x2, y2, x3, y3, clrFill);
-    }
-
-    // Üçgenin kenarlarını çiz
-    if(clrLine){
-      this.drawLine(x1, y1, x2, y2, clrLine);
-      this.drawLine(x2, y2, x3, y3, clrLine);
-      this.drawLine(x3, y3, x1, y1, clrLine);
-    }
-  }
-
-  // Üçgenin içini dolduran fonksiyon
-  fillTris(x1, y1, x2, y2, x3, y3, clr) {
-
-      // Üçgenin köşe noktalarını y koordinatlarına göre sırala
-      if (y1 > y2) { [x1, y1, x2, y2] = [x2, y2, x1, y1]; }
-      if (y2 > y3) { [x2, y2, x3, y3] = [x3, y3, x2, y2]; }
-      if (y1 > y2) { [x1, y1, x2, y2] = [x2, y2, x1, y1]; }
-
-      // Çizim yaparken kullanacağımız yardımcı değişkenler
-      let totalHeight = y3 - y1;
-
-      for (let i = 0; i < totalHeight; i++) {
-          let secondHalf = i > y2 - y1 || y2 === y1;
-          let segmentHeight = secondHalf ? y3 - y2 : y2 - y1;
-          let alpha = i / totalHeight;
-          let beta = (i - (secondHalf ? y2 - y1 : 0)) / segmentHeight;
-
-          let ax = x1 + (x3 - x1) * alpha;
-          let ay = y1 + i;
-          let bx = secondHalf ? x2 + (x3 - x2) * beta : x1 + (x2 - x1) * beta;
-          let by = y1 + i;
-
-          if (ax > bx) { [ax, bx] = [bx, ax]; }
-
-          for (let j = ax; j <= bx; j++) {
-              //console.log(j, ay, clr);
-              this.px(j, ay, clr);
-          }
-      }
   }
 
   emitFrame(cb){
@@ -563,19 +321,11 @@ class Screen{
     appLoader.loadWithDb(this, appName);
   }
 
-  clearPixels(){
-    this.pixels = new Uint8Array(this.width * this.height * 3);
-  }
-
-  px(x,y,rgb){
-    x=Math.ceil(x);
-    y=Math.ceil(y);
-
-    const index = ((y-1) * this.width + (x-1)) * 3;
-    //console.log(index);
-    this.pixels[index] = rgb[0];
-    this.pixels[index+1] = rgb[1];
-    this.pixels[index+2] = rgb[2];
+  px(x,y,rgba){
+    if(!this.pixels[x]){
+      this.pixels[x] = {};
+    }
+    this.pixels[x][y] = rgba;
   }
 
   hexToRgba(hex) {
@@ -593,14 +343,6 @@ class Screen{
 
     // RGB değerlerini bir obje olarak döndürür
     return [ r, g, b, a ];
-  }
-
-  mixColors(color1, color2, ratio = 0.5) {
-    return [
-        Math.round(color1[0] * (1 - ratio) + color2[0] * ratio),
-        Math.round(color1[1] * (1 - ratio) + color2[1] * ratio),
-        Math.round(color1[2] * (1 - ratio) + color2[2] * ratio)
-    ];
   }
 
 }

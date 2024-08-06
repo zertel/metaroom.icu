@@ -63,20 +63,12 @@ class ImageDriverJimp {
 
   async px(x, y, rgba, screenW, screenH){
     //rgba = this.color(rgba);
-    const idx = ((y-1) * screenW + (x-1)) * 3;
+    const idx = ((x-1) * screenW * 4) + ((y-1)*4);
     this.jimpImage.bitmap.data[idx] = rgba[0]; // R
     this.jimpImage.bitmap.data[idx + 1] = rgba[1]; // G
     this.jimpImage.bitmap.data[idx + 2] = rgba[2]; // B
     this.jimpImage.bitmap.data[idx + 3] = rgba[3]; // A
-  }
-
-  fillRgbPixels(pixels){
-    for (let i = 0; i < pixels.length/3; i++) {
-      this.jimpImage.bitmap.data[i*4]     = pixels[i*3]; // R
-      this.jimpImage.bitmap.data[i*4 + 1] = pixels[i*3 + 1]; // G
-      this.jimpImage.bitmap.data[i*4 + 2] = pixels[i*3 + 2]; // B
-      this.jimpImage.bitmap.data[i*4 + 3] = 255; // A
-    }
+    
   }
 
 

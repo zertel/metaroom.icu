@@ -60,6 +60,15 @@ io.on('connection', (socket) => {
 
     //socket.screen.setObject('mouseCursor',{type:'mouseCursor', x:0, y:0, w:0, h:0, data:null});
 
+    // TEST CODE
+    setInterval(function(){
+      for (var x = 1; x < 144; x++) {
+        for (var y = 1; y < 256; y++) {
+          socket.screen.px(x,y,[Math.floor(Math.random()*256), Math.floor(Math.random()*256), Math.floor(Math.random()*256),255]);
+        }
+      }
+    },1000/20);
+
   });
 
 
@@ -71,7 +80,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('refresh-screen', (data) => {
-    /*/
     if(socket.screen){
       if(socket.screen.refreshing == false){
         socket.screen.refreshing = true;
@@ -85,7 +93,7 @@ io.on('connection', (socket) => {
         console.log('Refresh bitmemiş');
       }
     }
-    /*/
+    
   });
 
   /*/
