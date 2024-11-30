@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>metaroom.icu</title>
+	<style type="text/css">
+		body{background-color:black;}
+		#logo{position:absolute;top:50%;left:50%;transform:translateX(-50%) translateY(-50%);z-index:0;}
+		#canvas{position:fixed;top:0;right:0;bottom:0;left:0;z-index:1;background-color:#555;}
+	</style>
+</head>
+<body>
+	<svg id="logo" width="220" height="220" viewBox="0 0 100 100" version="1.1"><g transform="translate(-44.664376,-75.934662)"><path style="fill:#55d400;stroke-width:0.293241" d="M 72.891442,102.33915 67.673208,155.14814 85.21878,129.02456 Z" id="path1" /><path style="fill:#55d400;stroke-width:0.293241" d="m 86.286728,123.96733 10.742747,25.28193 9.459405,-25.81137 z" id="path2" /><path style="fill:#55d400;stroke-width:0.293241" d="m 108.16736,123.18832 6.01154,-19.94382 7.72067,47.19101 z" id="path3" /><path style="opacity:0.5;fill:#55d400;stroke-width:0.293241" d="m 69.04643,100.31021 -16.966666,-9.83146 -7.415388,67.97753 19.163817,-3.93259 z" id="path5" /><path style="opacity:0.5;fill:#55d400;stroke-width:0.346967" d="m 117.56652,101.84001 9.99071,50.46782 17.10715,5.55533 -13.64664,-65.573714 z" id="path6" /><path style="opacity:0.5;fill:#55d400;stroke-width:0.293241" d="m 69.321071,77.058257 9.06325,13.483145 32.133339,-0.561798 7.69002,-14.044942 z" id="path7" /><path style="opacity:0.5;fill:#55d400;stroke-width:0.293241" d="m 78.109676,162.45152 -6.866097,13.48314 50.809121,-0.5618 -7.41538,-13.76404 z" id="path8" /></g></svg>
+	<canvas id="canvas"></canvas>
+	<script>
+        const host = 'ws://localhost:8000';
+        const width = 1280;
+        const height = 720;
+
+        const canvas = document.getElementById('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        const pixels = new Uint8ClampedArray(width * height * 4);
+        const colors = [[0,0,0],[1,1,1],[2,1,1],[3,1,1],[4,1,1],[5,1,1],[6,1,1],[7,1,1],[1,2,1],[2,2,1],[3,2,1],[4,2,1],[5,2,1],[6,2,1],[7,2,1],[1,3,1],[2,3,1],[3,3,1],[4,3,1],[5,3,1],[6,3,1],[7,3,1],[1,4,1],[2,4,1],[3,4,1],[4,4,1],[5,4,1],[6,4,1],[7,4,1],[1,5,1],[2,5,1],[3,5,1],[4,5,1],[5,5,1],[6,5,1],[7,5,1],[1,6,1],[2,6,1],[3,6,1],[4,6,1],[5,6,1],[6,6,1],[7,6,1],[1,7,1],[2,7,1],[3,7,1],[4,7,1],[5,7,1],[6,7,1],[7,7,1],[1,1,2],[2,1,2],[3,1,2],[4,1,2],[5,1,2],[6,1,2],[7,1,2],[1,2,2],[2,2,2],[3,2,2],[4,2,2],[5,2,2],[6,2,2],[7,2,2],[1,3,2],[2,3,2],[3,3,2],[4,3,2],[5,3,2],[6,3,2],[7,3,2],[1,4,2],[2,4,2],[3,4,2],[4,4,2],[5,4,2],[6,4,2],[7,4,2],[1,5,2],[2,5,2],[3,5,2],[4,5,2],[5,5,2],[6,5,2],[7,5,2],[1,6,2],[2,6,2],[3,6,2],[4,6,2],[5,6,2],[6,6,2],[7,6,2],[1,7,2],[2,7,2],[3,7,2],[4,7,2],[5,7,2],[6,7,2],[7,7,2],[1,1,3],[2,1,3],[3,1,3],[4,1,3],[5,1,3],[6,1,3],[7,1,3],[1,2,3],[2,2,3],[3,2,3],[4,2,3],[5,2,3],[6,2,3],[7,2,3],[1,3,3],[2,3,3],[3,3,3],[4,3,3],[5,3,3],[6,3,3],[7,3,3],[1,4,3],[2,4,3],[3,4,3],[4,4,3],[5,4,3],[6,4,3],[7,4,3],[1,5,3],[2,5,3],[3,5,3],[4,5,3],[5,5,3],[6,5,3],[7,5,3],[1,6,3],[2,6,3],[3,6,3],[4,6,3],[5,6,3],[6,6,3],[7,6,3],[1,7,3],[2,7,3],[3,7,3],[4,7,3],[5,7,3],[6,7,3],[7,7,3],[1,1,4],[2,1,4],[3,1,4],[4,1,4],[5,1,4],[6,1,4],[7,1,4],[1,2,4],[2,2,4],[3,2,4],[4,2,4],[5,2,4],[6,2,4],[7,2,4],[1,3,4],[2,3,4],[3,3,4],[4,3,4],[5,3,4],[6,3,4],[7,3,4],[1,4,4],[2,4,4],[3,4,4],[4,4,4],[5,4,4],[6,4,4],[7,4,4],[1,5,4],[2,5,4],[3,5,4],[4,5,4],[5,5,4],[6,5,4],[7,5,4],[1,6,4],[2,6,4],[3,6,4],[4,6,4],[5,6,4],[6,6,4],[7,6,4],[1,7,4],[2,7,4],[3,7,4],[4,7,4],[5,7,4],[6,7,4],[7,7,4],[1,1,5],[2,1,5],[3,1,5],[4,1,5],[5,1,5],[6,1,5],[7,1,5],[1,2,5],[2,2,5],[3,2,5],[4,2,5],[5,2,5],[6,2,5],[7,2,5],[1,3,5],[2,3,5],[3,3,5],[4,3,5],[5,3,5],[6,3,5],[7,3,5],[1,4,5],[2,4,5],[3,4,5],[4,4,5],[5,4,5],[6,4,5],[7,4,5],[1,5,5],[2,5,5],[3,5,5],[4,5,5],[5,5,5],[6,5,5],[7,5,5],[1,6,5],[2,6,5],[3,6,5],[4,6,5],[5,6,5],[6,6,5],[7,6,5],[1,7,5],[2,7,5],[3,7,5],[4,7,5],[5,7,5],[6,7,5],[7,7,5],[7,0,0],[0,7,0],[0,0,7],[7,7,0],[7,0,7],[0,7,7],[7,7,7]];
+		const in_types = {
+		    //Data bulks (1-100)
+		    IMAGE_DATA: 1,
+		    AUDIO_DATA: 2,
+
+		    //System Requests (101+)
+		    REQUEST_SCREEN_SIZE: 101,
+
+		    //Permission Requests (255-)
+		    REQUEST_VIDEO_INPUT_PERMISSION: 253,
+		    REQUEST_AUDIO_INPUT_PERMISSION: 254,
+		    REQUEST_AUDIO_OUTPUT_PERMISSION: 255
+		};
+		const out_types = {
+		    //Input events (1-100)
+			KEY_DOWN: 1,
+			KEY_UP: 2,
+			POINTER_DOWN: 3,
+			POINTER_UP: 4,
+			POINTER_MOVE: 5,
+
+		    //System Request Answers (101+)
+		    SCREEN_SIZE: 101,
+		    
+		    //Permission Request Answers (255-)
+		    VIDEO_INPUT_PERMISSION: 253,
+		    AUDIO_INPUT_PERMISSION: 254,
+		    AUDIO_OUTPUT_PERMISSION: 255
+		};
+		const fill_types = {
+		    FILL_FULL_CANVAS: 1,
+		    FILL_256_BOX: 2,
+		    FILL_BOX: 3,
+		    FILL_RECT: 4
+		};
+
+        let ws = null;
+        let audio = null;
+        let readyForTouch = 0;
+
+        
+        function toggleAudioOutput(){
+        	if(!audio){
+        		audio = new AudioContext();
+        	}
+        	else{
+        		audio = null;
+        	}
+        }
+		function ontouch(){
+			switch(readyForTouch){
+
+				case in_types.AUDIO_OUTPUT_PERMISSION:
+					if(!audio){
+						if(confirm("Ses çıkış izni")){
+							toggleAudioOutput();
+						}
+					}
+					console.log("Ses: ", audio?'Açık':'Kapalı');
+                	ws.send(new Uint8Array([ in_types.AUDIO_OUTPUT_PERMISSION, (audio?1:2) ]));
+					readyForTouch = 0;
+					break;
+
+			}
+		}
+        function draw(){
+            const imageData = new ImageData(pixels, width, height);
+            //console.log(imageData);
+            ctx.putImageData(imageData, 0, 0);
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(canvas, 0, 0, width, height, 0, 0, width, height);
+        }
+		function fill(buffer, chars){
+			// byte 2 chars[1]: fill_types.%
+			//console.log('fill',chars);
+
+            switch(chars[1]){
+	            case fill_types.FILL_256_BOX: // Sunucudan gelen veri 256x256 resim parçası ise
+	            	const payload = 6;
+
+		            // 16-bit değerleri oku (Little-endian)
+			        const dataView = new DataView(buffer);
+		            const x = dataView.getUint16(2, true); // byte 3 and 4 chars[2,3]: image x pos
+		            const y = dataView.getUint16(4, true); // byte 5 and 6 chars[4,5]: image y pos
+		            
+		            const start_index = ((y-1)*width) + x;
+		            //console.log("x", x, "y", y, "start_index", start_index);
+
+            		// 256*256 resim 8bit-rgb verisini 32bit-rgba ya dönüştürüyor ve ram'a yaz
+            		
+		            for (var i = 0; i < 256; i++) {
+			            for (var j = 0; j < 256; j++) {
+			            	const idx = payload + (i*256) + j;
+			            	let clr = colors[chars[idx]];
+			            	const idx2 = (start_index + (i*width) + j) * 4;
+			                pixels[idx2] = ( clr[0] /7)*255;
+			                pixels[idx2 + 1] = ( clr[1] /7)*255;
+			                pixels[idx2 + 2] = ( clr[2] /7)*255;
+			                pixels[idx2 + 3] = 255;
+			            }
+		            }
+		            /*/
+		            for (let i = payload, j = 0; i < chars.length; i++, j += 4) {
+		                let clr = colors[chars[i]];
+		                pixels[start_index + j] = ( clr[0] /7)*255;
+		                pixels[start_index + j + 1] = ( clr[1] /7)*255;
+		                pixels[start_index + j + 2] = ( clr[2] /7)*255;
+		                pixels[start_index + j + 3] = 255;
+		            }
+		            /*/
+	            	//console.log("FILL_256_BOX bitti",pixels);
+	            	draw();
+		            break;
+
+	            case fill_types.FILL_FULL_CANVAS: // Sunucudan gelen veri ekranın tamamı ise
+            		// 8bit-rgb verisini 32bit-rgba ya dönüştürüyor ve ram'a yaz
+					for (let i = payload, j = 0; i < data.length; i++, j += 4) {
+		                let clr = colors[chars[i]];
+		                pixels[j] = ( clr[0] /7)*255;
+		                pixels[j + 1] = ( clr[1] /7)*255;
+		                pixels[j + 2] = ( clr[2] /7)*255;
+		                pixels[j + 3] = 255;
+		            }
+		            break;
+            }
+        }
+		function router(buffer){
+			const chars = new Uint8Array(buffer);
+			// byte 1 chars[0]: in_types.% || Client sunucudan gelen veriyi nasıl işlesin?
+			//console.log('router',data);
+
+	        switch(chars[0]){
+	            case in_types.IMAGE_DATA: // sunucudan gelen pixelleri ram'a işle (ekrana yazma kısmı client insiyatifinde olacak)
+	            	fill(buffer, chars);
+	            	break;
+
+	            case in_types.AUDIO_OUTPUT_PERMISSION: // Sunucu ses çıkışı izni istiyor. (kullanıcı ekrana dokununca ontouch fonksiyonu çalışacak)
+	            	console.log('AUDIO_OUTPUT_PERMISSION geldi, şimdi ekrana dokun.');
+	            	readyForTouch = in_types.AUDIO_OUTPUT_PERMISSION;
+	            	break;
+	        }
+		}
+		function sendScreenSize(){
+            if(!ws) return;
+		    const buffer = new ArrayBuffer(5); // 1 byte type + 2 byte width + 2 byte height
+		    const view = new DataView(buffer);
+		    view.setUint8(0, out_types.SCREEN_SIZE);
+		    view.setUint16(1, width, true);  // true = little endian
+		    view.setUint16(3, height, true);
+		    ws.send(new Uint8Array(buffer));
+		}
+        function connect() {
+            if(ws) return;
+            ws = new WebSocket(host);
+            ws.onopen = function() { // Bağlantı başarılı
+			    console.log('bağlandı');
+			    sendScreenSize();
+			};
+            ws.onclose = function() { // Bağlantı kapandı
+                console.log("koptu");
+                ws = null;
+                setTimeout(connect,1000);
+            };
+            ws.onmessage = function(event) {
+			    if (!event || !event.data) return;
+			    event.data.arrayBuffer().then(buffer => {
+			        if (!buffer) return;
+			        try {
+			            router(buffer);
+			            //console.log(uint8Array);
+			        } catch (error) {
+			            console.error('Buffer okuma hatası:', error);
+			        }
+			    }).catch(error => {
+			        console.error('ArrayBuffer dönüştürme hatası:', error);
+			    });
+			};
+        }
+        function send_8_8_16_16(a8,b8,c16,d16){
+            if(!ws) return;
+		    /*
+		    const buffer = new ArrayBuffer(6); // 8,8,16,16 toplam 6 byte
+		    const view = new DataView(buffer);
+		    view.setUint8(0, a8);
+		    view.setUint8(1, b8);
+		    view.setUint16(2, c16, true);  // true = little endian
+		    view.setUint16(4, d16, true);
+		    ws.send(new Uint8Array(buffer));
+		    */
+		    const buffer = new Uint8Array(6); // 8,8,16,16 toplam 6 byte
+		    buffer[0] = a8;
+		    buffer[1] = b8;
+		    const int16 = new Uint16Array([c16, d16]);
+		    for (let i = 0; i < int16.length; i++) {
+		        buffer[2 + i * 2] = int16[i] & 0xFF;          // Alt byte
+		        buffer[2 + i * 2 + 1] = (int16[i] >> 8) & 0xFF;  // Üst byte
+		    }
+		    ws.send(buffer);
+        }
+        function initTouch(){
+        	// Aktif pointer'ları saklamak için bir nesne
+			const activePointers = {};
+
+			// Pointer olaylarını dinle
+			canvas.addEventListener("pointerdown", (e) => {
+				send_8_8_16_16(out_types.POINTER_DOWN, e.pointerId, e.clientX, e.clientY);
+
+				activePointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+			  	ctx.clearRect(0, 0, canvas.width, canvas.height);
+				drawPointers();
+			});
+
+			canvas.addEventListener("pointerup", (e) => {
+				send_8_8_16_16(out_types.POINTER_UP, e.pointerId, e.clientX, e.clientY);
+				
+				delete activePointers[e.pointerId];
+				drawPointers();
+			});
+
+			canvas.addEventListener("pointermove", (e) => {
+				if (activePointers[e.pointerId]) {
+					send_8_8_16_16(out_types.POINTER_MOVE, e.pointerId, e.clientX, e.clientY);
+					activePointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+					drawPointers();
+				}
+			});
+
+			canvas.addEventListener("pointercancel", (e) => {
+			  delete activePointers[e.pointerId];
+			  drawPointers();
+			});
+
+			// Pointer'ları çiz
+			function drawPointers() {
+
+			  for (let id in activePointers) {
+			    const { x, y } = activePointers[id];
+			    ctx.beginPath();
+			    ctx.arc(x, y, 30, 0, Math.PI * 2);
+			    ctx.fillStyle = "rgba(255, 0, 0, 0.5)";
+			    ctx.fill();
+			    ctx.stroke();
+			    ctx.fillStyle = "black";
+			    ctx.fillText(`ID: ${id}`, x - 15, y - 40);
+			  }
+			}
+        }
+        function initKeyboard(){
+        	let pressedKeys = {};
+			document.addEventListener('keydown', (event) => {
+				if(!pressedKeys[event.key]){
+				  pressedKeys[event.key] = 1;
+				  //addToLog("Giden: "+event.keyCode+"("+event.key+")");
+				  if(ws){
+				  	ws.send(new Uint8Array([out_types.KEY_DOWN, event.keyCode]));
+				  }
+				}
+			});
+			document.addEventListener('keyup', (event) => {
+				pressedKeys[event.key] = 0;
+				if(ws){
+					ws.send(new Uint8Array([out_types.KEY_UP, event.keyCode]));
+				}
+			});
+        }
+
+		window.onload = ()=>{
+			connect();
+			initTouch();
+			initKeyboard();
+		}
+	</script>
+</body>
+</html>
